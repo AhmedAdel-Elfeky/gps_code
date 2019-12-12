@@ -2,8 +2,8 @@
 
 import rospy
 import time
-import board
-import busio
+#import board
+#import busio
 import adafruit_gps
 import serial
 from sensor_msgs.msg import NavSatFix
@@ -20,7 +20,7 @@ pub = rospy.Publisher('/gps_data',NavSatFix , queue_size =10)
 rate =rospy.Rate(10)
 
 gps_data = NavSatStatus()
-cv = [25,]*8
+cv = [25,]*9
 while True:
         data = gps.read(300)  # read up to 300 bytes
         if data is not None:
@@ -40,15 +40,25 @@ while True:
                         print('time is   : ',hour ,minute ,sec)
                         if ValidFlag == 'A':  #data is valid
                                 print("Data is valid")
-                                Latitude = data_string[result+18:result+20]+'.'+data_string[result+20:result+22]+data_string[result+23:\
-                                result+28]
-                                Longitude = data_string[result+31:result+34]+'.'+data_string[result+34:result+36]+data_string[result+37:\
-                                result+41]
-                                if (Latitude != '.') & (Longitude != '.') :
+                                Latitude = data_string[result+18:result+20]+'.'+data_string[result+20:result+22]\
+				+data_string[result+23:result+28]
+                                Longitude = data_string[result+31:result+34]+'.'+data_string[result+34:result+36]\
+				+data_string[result+37:result+41]
+				if (index_GNGGA >= 0 ) & (index_GNGGA <(300-58)):
+                                	altitude = data_string[index_GNGGA+53:index_GNGGA+57]
+                                else:
+                                	altitude = '0'
+                                if (Latitude != '.') & (Longitude != '.') & (altitude != '.'):
                                         Longitude = float(Longitude)
                                         Latitude = float(Latitude)
+					index = altitude.find(',')
+                                        if index != -1:
+                                        	altitude = altitude[:index]
+                                        altitude = float(altitude)
+					#set the parameters of message
                                         gps_data.latitude=Latitude
                                         gps_data.longitude=Longitude
+					gps_data.altitude= altitude
                                         gps_data.header.frame_id = "/gps_frame"
                                         gps_data.status.status = 0
                                         gps_data.status.service = 1
@@ -58,6 +68,7 @@ while True:
                                         pub.publish(gps_data)                            			
                                         print('Latitude  :',Latitude)
                                         print('Longitude :',Longitude)
+					print('Altitude  :',altitude)
                                 else:   
                                 	print("Data is not valid")
 
